@@ -50,4 +50,4 @@ async function handler(req, res) {
   }
 }
 
-export default allowCors(handle
+export default allowCors(handler)

@@ -1,15 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-// 初始化 Supabase Client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 )
 
-// CORS 設定（讓 Lovable 可以呼叫）
+// ✅ 允許跨網域（CORS）
 const allowCors = (fn) => async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true)
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Origin', '*')  // 允許任何來源（含 Lovable）
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -19,35 +18,27 @@ const allowCors = (fn) => async (req, res) => {
 async function handler(req, res) {
   try {
     if (req.method === 'POST') {
-      const { petName, note } = req.body
-      console.log('📩 Received message:', petName, note)
-
+      const { message } = req.body
       const { data, error } = await supabase
         .from('memories')
-        .insert([{ pet_name: petName || '未命名', note }])
+        .insert([{ pet_name: '金瓜', note: message }])
         .select()
 
-      if (error) {
-        console.error('❌ Supabase insert error:', error)
-        throw error
-      }
-
-      return res.status(200).json({ success: true, data })
-    }
-
-    if (req.method === 'GET') {
+      if (error) throw error
+      res.status(200).json({ success: true, data })
+    } else if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('memories')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      return res.status(200).json(data)
+      res.status(200).json(data)
+    } else {
+      res.status(405).json({ error: 'Method not allowed' })
     }
-
-    res.status(405).end()
   } catch (err) {
-    console.error('❌ UploadMemory crash:', err)
+    console.error('UploadMemory Error:', err.message)
     res.status(500).json({ success: false, error: err.message })
   }
 }

@@ -1,27 +1,40 @@
-let memories = [];
+import { createClient } from '@supabase/supabase-js'
 
-export default function handler(req, res) {
-  // 🔧 加上這三行
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+// 初始化 Supabase Client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+)
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end(); // 提前結束 OPTIONS 預檢請求
-  }
+// 允許跨網域請求（給 Lovable）
+const allowCors = (fn) => async (req, res) => {
+  res.setHeader('Access-Control-Allow-Credentials', true)
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  return await fn(req, res)
+}
 
-  if (req.method === "POST") {
-    try {
-      const { petName, note } = req.body;
-      const entry = { petName, note, time: new Date().toISOString() };
-      memories.push(entry);
-      res.status(200).json({ success: true, entry });
-    } catch (err) {
-      res.status(500).json({ success: false, error: err.message });
-    }
-  } else if (req.method === "GET") {
-    res.status(200).json(memories);
+async function handler(req, res) {
+  if (req.method === 'POST') {
+    const { petName, note } = req.body
+    const { data, error } = await supabase
+      .from('memories')
+      .insert([{ pet_name: petName, note }])
+      .select()
+    if (error) return res.status(500).json({ success: false, error })
+    res.status(200).json({ success: true, data })
+  } else if (req.method === 'GET') {
+    const { data, error } = await supabase
+      .from('memories')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) return res.status(500).json({ success: false, error })
+    res.status(200).json(data)
   } else {
-    res.status(405).end();
+    res.status(405).end()
   }
 }
+
+export default allowCors(handler)

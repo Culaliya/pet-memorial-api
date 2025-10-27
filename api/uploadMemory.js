@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 )
 
-// CORS 設定（讓 Lovable 可以 POST）
+// CORS 設定（讓 Lovable 可以呼叫）
 const allowCors = (fn) => async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true)
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -20,15 +20,18 @@ async function handler(req, res) {
   try {
     if (req.method === 'POST') {
       const { petName, note } = req.body
-      console.log('收到留言：', petName, note)
+      console.log('📩 Received message:', petName, note)
 
-      // 寫入 Supabase 資料表
       const { data, error } = await supabase
         .from('memories')
         .insert([{ pet_name: petName || '未命名', note }])
         .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Supabase insert error:', error)
+        throw error
+      }
+
       return res.status(200).json({ success: true, data })
     }
 
@@ -42,10 +45,9 @@ async function handler(req, res) {
       return res.status(200).json(data)
     }
 
-    // 其他方法
     res.status(405).end()
   } catch (err) {
-    console.error('uploadMemory 錯誤：', err.message)
+    console.error('❌ UploadMemory crash:', err)
     res.status(500).json({ success: false, error: err.message })
   }
 }

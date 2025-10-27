@@ -5,10 +5,10 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 )
 
-// ✅ 允許跨網域（CORS）
+// ✅ 允許跨網域的 CORS
 const allowCors = (fn) => async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true)
-  res.setHeader('Access-Control-Allow-Origin', '*')  // 允許任何來源（含 Lovable）
+  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
@@ -23,7 +23,6 @@ async function handler(req, res) {
         .from('memories')
         .insert([{ pet_name: '金瓜', note: message }])
         .select()
-
       if (error) throw error
       res.status(200).json({ success: true, data })
     } else if (req.method === 'GET') {
@@ -31,7 +30,6 @@ async function handler(req, res) {
         .from('memories')
         .select('*')
         .order('created_at', { ascending: false })
-
       if (error) throw error
       res.status(200).json(data)
     } else {
